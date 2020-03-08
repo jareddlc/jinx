@@ -1,12 +1,17 @@
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate serde_json;
+
 use handlebars::Handlebars;
+use rs_docker::Docker;
 use std::env;
 use std::fs::File;
-use std::io::BufReader;
 use std::str;
 
-pub mod structs;
+pub mod jinx;
 
-use structs::{Jinx, JinxService};
+use jinx::{Jinx, JinxService};
 
 // logs errors and exits.
 macro_rules! log_exit {
@@ -19,23 +24,20 @@ macro_rules! log_exit {
 }
 
 fn main() {
-    // get current directory
-    let current_dir = env::current_dir().expect("[Main] Failed to get current directory");
+    // load logger
+    if env::var("RUST_LOG").is_err() {
+        // limit RUST_LOG to our project
+        let log_level = format!("jinx={}", "debug");
+        env::set_var("RUST_LOG", log_level);
+    }
 
-    // attempt to open jinx.json in current directory
-    let jinx_path = format!("{}/jinx.json", current_dir.display());
-    let file = match File::open(jinx_path) {
-        Err(err) => log_exit!("Failed to load jinx.json", &err),
-        Ok(file) => file,
-    };
+    // load jinx file
+    debug!("[Main] Loading jinx file");
+    let _jinx_file: Jinx = jinx::read_jinx_file();
 
-    // read the file
-    let reader = BufReader::new(file);
-
-    // parse jinx.json into a JinxService
-    let service: JinxService = match serde_json::from_reader(reader) {
-        Err(err) => log_exit!("Failed to parse jinx.json", &err),
-        Ok(file) => file,
+    let jinx_service: JinxService = match jinx::get_jinx_service() {
+        None => log_exit!("Failed to load jinx.json"),
+        Some(svc) => svc,
     };
 
     // create handlebars instance
@@ -43,7 +45,7 @@ fn main() {
 
     // create template data
     let jinx = Jinx {
-        services: vec![service],
+        services: vec![jinx_service],
         ..Default::default()
     };
 
@@ -66,4 +68,9 @@ fn main() {
     handlebars
         .render_template_to_write(nginx_template, &jinx, output_file)
         .expect("[Main] Failed to render template to file");
+
+    let mut _docker = match Docker::connect("unix:///var/run/docker.sock") {
+        Ok(docker) => docker,
+        Err(err) => log_exit!("Failed to connect to docker socket", &err),
+    };
 }
