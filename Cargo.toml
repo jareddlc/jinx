@@ -1,0 +1,12 @@
+[package]
+name = "jinx"
+version = "0.1.0"
+authors = ["Jared De La Cruz <jared@jareddlc.com>"]
+edition = "2018"
+
+[dependencies]
+crossterm = "0.16"
+handlebars = "3.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
