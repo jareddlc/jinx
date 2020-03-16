@@ -10,6 +10,17 @@ pub mod docker;
 pub mod jinx;
 pub mod nginx;
 
+// logs errors and exits
+#[macro_export]
+macro_rules! log_exit {
+    ($($x:expr),+) => {
+        {
+            $(eprintln!("[ERROR] {}", $x);)+
+            std::process::exit(1)
+        }
+    };
+}
+
 fn main() {
     // load logger
     if env::var("JINX_LOG").is_ok() {

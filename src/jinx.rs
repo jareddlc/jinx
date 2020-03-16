@@ -8,15 +8,18 @@ use std::io::BufReader;
 use std::path::Path;
 use std::str;
 
+use super::log_exit;
+
 #[derive(Debug, Deserialize, Serialize, Clone, std::cmp::PartialEq)]
 pub struct JinxService {
-    name: Option<String>,
-    domain: Option<String>,
-    container_name: Option<String>,
-    container_port: Option<u16>,
-    container_image: Option<String>,
-    host_port: Option<u16>,
-    entrypoint: Option<String>,
+    pub name: Option<String>,
+    pub project_dir: Option<String>,
+    pub domain: Option<String>,
+    pub container_name: Option<String>,
+    pub container_port: Option<u16>,
+    pub container_image: Option<String>,
+    pub host_port: Option<u16>,
+    pub entrypoint: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -50,7 +53,7 @@ pub fn create_jinx_file() -> File {
 
     // create jinx directory
     let _dir = match fs::create_dir_all(jinx_directories.jinx_dir) {
-        Err(err) => panic!(format!("[JINX] Failed to create jinx directory: {}", err)),
+        Err(err) => log_exit!("[JINX] Failed to create jinx directory", err),
         Ok(dir) => dir,
     };
 
@@ -74,10 +77,28 @@ pub fn create_jinx_file() -> File {
     open_jinx_file()
 }
 
+pub fn get_dockerfile() {
+    // // get current directory
+    // let current_dir = env::current_dir().expect("[JINX] Failed to get current directory");
+
+    // // read the Dockerfile
+    // let dockerfile_path = format!("{}/Dockerfile", current_dir.display());
+    // let dockerfile = match fs::read_to_string(dockerfile_path) {
+    //     Err(_err) => return None,
+    //     Ok(file) => file,
+    // };
+
+    // // convert to vector of bytes
+    // let dockerfile_bytes: Vec<u8> = dockerfile.as_bytes().iter().cloned().collect();
+
+    // let mut service_dockerfile: JinxService = service.unwrap();
+    // service_dockerfile.dockerfile = Some(dockerfile_bytes);
+}
+
 pub fn get_jinx_directories() -> JinxDirectories {
     // get users home directory
     let home_dir = match dirs::home_dir() {
-        None => panic!("[JINX] Failed to get home directory"),
+        None => log_exit!("[JINX] Failed to get home directory"),
         Some(dir) => dir,
     };
 
@@ -100,7 +121,7 @@ pub fn get_jinx_file() -> Jinx {
 
     // parse jinx.json into a JinxService
     let jinx: Jinx = match serde_json::from_reader(reader) {
-        Err(_) => panic!("[JINX] Failed to parse jinx.json"),
+        Err(err) => log_exit!("[JINX] Failed to parse jinx.json", err),
         Ok(file) => file,
     };
 

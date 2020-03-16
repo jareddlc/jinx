@@ -2,6 +2,7 @@ use handlebars::Handlebars;
 use std::fs::File;
 use std::str;
 
+use super::log_exit;
 use crate::jinx;
 use crate::jinx::Jinx;
 
@@ -35,7 +36,7 @@ pub fn create_nginx_conf(jinx: &Jinx) {
 
     // create output files
     let output_file = match File::create(nginx_conf_dir) {
-        Err(_err) => panic!("[NGINX] Failed to create nginx.conf"),
+        Err(err) => log_exit!("[NGINX] Failed to create nginx.conf", err),
         Ok(file) => file,
     };
 
