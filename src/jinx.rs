@@ -13,7 +13,6 @@ use super::log_exit;
 #[derive(Debug, Deserialize, Serialize, Clone, std::cmp::PartialEq)]
 pub struct JinxService {
     pub name: Option<String>,
-    pub project_dir: Option<String>,
     pub domain: Option<String>,
     pub container_name: Option<String>,
     pub container_port: Option<u16>,
@@ -75,24 +74,6 @@ pub fn create_jinx_file() -> File {
     }
 
     open_jinx_file()
-}
-
-pub fn get_dockerfile() {
-    // // get current directory
-    // let current_dir = env::current_dir().expect("[JINX] Failed to get current directory");
-
-    // // read the Dockerfile
-    // let dockerfile_path = format!("{}/Dockerfile", current_dir.display());
-    // let dockerfile = match fs::read_to_string(dockerfile_path) {
-    //     Err(_err) => return None,
-    //     Ok(file) => file,
-    // };
-
-    // // convert to vector of bytes
-    // let dockerfile_bytes: Vec<u8> = dockerfile.as_bytes().iter().cloned().collect();
-
-    // let mut service_dockerfile: JinxService = service.unwrap();
-    // service_dockerfile.dockerfile = Some(dockerfile_bytes);
 }
 
 pub fn get_jinx_directories() -> JinxDirectories {

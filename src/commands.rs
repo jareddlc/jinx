@@ -10,6 +10,7 @@ use crate::docker;
 use crate::jinx;
 use crate::jinx::{Jinx, JinxService};
 use crate::nginx;
+use crate::targz;
 
 pub fn handle_args(args: Vec<String>) {
     // help
@@ -29,7 +30,7 @@ pub fn handle_args(args: Vec<String>) {
 
     // load
     if args.contains(&"load".to_string()) {
-        return get_jinx_service();
+        return load();
     }
 
     // build
@@ -50,7 +51,7 @@ pub fn build() {
     docker::build_docker_image(client, jinx_file.services[0].clone());
 }
 
-pub fn get_jinx_service() {
+pub fn load() {
     // load jinx.json from current directory
     debug!("[COMMANDS] Loading jinx.json from current directory");
     let jinx_service: JinxService = match jinx::get_jinx_service() {
@@ -64,12 +65,20 @@ pub fn get_jinx_service() {
 
     // append new jinx service
     if !jinx_file.services.contains(&jinx_service) {
-        jinx_file.services.push(jinx_service);
+        jinx_file.services.push(jinx_service.clone());
     }
 
     // save jinx
     debug!("[COMMANDS] Saving jinx.json");
     jinx::save_jinx_file(&jinx_file);
+
+    // get dockerignore file
+    debug!("[COMMANDS] Loading dockerignore");
+    let dockerignore = docker::get_dockerignore();
+
+    // create tar file of the project directory
+    debug!("[COMMANDS] Creating tar of project directory");
+    targz::create_tar(&jinx_service, &dockerignore);
 
     // create template data
     let _nginx_rendered = nginx::create_nginx_conf(&jinx_file);
@@ -92,5 +101,5 @@ pub fn init() {
 }
 
 pub fn version() {
-    execute!(stdout(), Print("0.1.0"), ResetColor).expect("[COMMANDS] Failed to run help");
+    execute!(stdout(), Print("0.1.0\n"), ResetColor).expect("[COMMANDS] Failed to run help");
 }

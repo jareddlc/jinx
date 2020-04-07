@@ -2,6 +2,7 @@
 extern crate log;
 #[macro_use]
 extern crate serde_json;
+extern crate tar;
 
 use std::env;
 
@@ -9,6 +10,7 @@ pub mod commands;
 pub mod docker;
 pub mod jinx;
 pub mod nginx;
+pub mod targz;
 
 // logs errors and exits
 #[macro_export]
