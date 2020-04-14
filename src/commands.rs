@@ -42,14 +42,7 @@ pub fn handle_args(args: Vec<String>) {
     help()
 }
 
-pub fn build() {
-    // get docker client
-    let client = docker::get_client();
-
-    let jinx_file: Jinx = jinx::get_jinx_file();
-
-    docker::build_docker_image(client, jinx_file.services[0].clone());
-}
+pub fn build() {}
 
 pub fn load() {
     // load jinx.json from current directory
@@ -79,6 +72,17 @@ pub fn load() {
     // create tar file of the project directory
     debug!("[COMMANDS] Creating tar of project directory");
     targz::create_tar(&jinx_service, &dockerignore);
+
+    // get tar file bytes
+    debug!("[COMMANDS] Opening tar file");
+    let tar_bytes = targz::get_tar(&jinx_service);
+
+    // get docker client
+    debug!("[COMMANDS] Getting docker client");
+    let client = docker::get_client();
+
+    debug!("[COMMANDS] Build docker image");
+    docker::build_docker_image(client, &jinx_service, tar_bytes);
 
     // create template data
     let _nginx_rendered = nginx::create_nginx_conf(&jinx_file);

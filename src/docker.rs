@@ -8,19 +8,19 @@ use std::io::BufReader;
 use super::log_exit;
 use crate::jinx::JinxService;
 
-pub fn build_docker_image(_client: Docker, jinx_service: JinxService) {
-    if jinx_service.name.is_none() {
-        return;
-    }
+pub fn build_docker_image(mut client: Docker, jinx_service: &JinxService, bytes: Vec<u8>) {
+    // get service name
+    let service_name = match &jinx_service.name {
+        None => return,
+        Some(name) => name,
+    };
 
-    // let dockerfile = match jinx_service.dockerfile {
-    //     None => return,
-    //     Some(bytes) => bytes,
-    // };
+    // create image name with tag
+    let name = format!("{}:{}", service_name, "jinx".to_string());
 
-    // let build_result = client.build_image(dockerfile, "jinx_tag".to_string());
-
-    // debug!("[DOCKER] Build: {:?}", build_result);
+    let _build_result = client
+        .build_image(bytes, name)
+        .expect("[DOCKER] Failed to build image");
 }
 
 pub fn create_jinx_network(mut client: Docker) {
