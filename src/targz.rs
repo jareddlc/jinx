@@ -6,24 +6,39 @@ use std::io::prelude::*;
 use tar::Builder;
 
 use super::log_exit;
-use crate::jinx;
-use crate::jinx::JinxService;
+use crate::file::get_jinx_files;
+use crate::service::JinxService;
 
-pub fn create_tar(jinx_service: &JinxService, excluded: &Vec<String>) {
+// returns a Vec<u8> of the tar.gz file
+pub fn get_tar(jinx_service: &JinxService) -> Vec<u8> {
+  // get jinx files
+  let jinx_files = get_jinx_files();
+
+  // create path
+  let tar_file_path = format!("{}/{}.tar.gz", jinx_files.jinx_home, &jinx_service.name);
+
+  // open tar file
+  let mut tar_file = File::open(&tar_file_path).expect("[TARGZ] Failed to open tar file");
+  let mut tar_buffer = vec![];
+
+  // read tar file
+  tar_file
+    .read_to_end(&mut tar_buffer)
+    .expect("[TARGZ] Failed to read tar file");
+
+  tar_buffer
+}
+
+// creates a tar of the project
+pub fn write_tar(jinx_service: &JinxService, excluded: &Vec<String>) {
   // get current directory
   let current_dir = env::current_dir().expect("[TARGZ] Failed to get current directory");
 
-  // get jinx directories
-  let jinx_directories = jinx::get_jinx_directories();
-
-  // get jinx service name
-  let file_name = match &jinx_service.name {
-    None => log_exit!("[TARGZ] Failed to load jinx.json"),
-    Some(name) => name,
-  };
+  // get jinx files
+  let jinx_files = get_jinx_files();
 
   // create paths
-  let tar_file_path = format!("{}/{}.tar.gz", jinx_directories.jinx_dir, file_name);
+  let tar_file_path = format!("{}/{}.tar.gz", jinx_files.jinx_home, &jinx_service.name);
 
   // create files
   let tar_file = File::create(&tar_file_path).expect("[TARGZ] Failed to create tar file");
@@ -66,29 +81,4 @@ pub fn create_tar(jinx_service: &JinxService, excluded: &Vec<String>) {
     })
     .collect::<Result<Vec<_>, io::Error>>()
     .expect("[TARGZ] Failed to collect directory");
-}
-
-pub fn get_tar(jinx_service: &JinxService) -> Vec<u8> {
-  // get jinx directories
-  let jinx_directories = jinx::get_jinx_directories();
-
-  // get jinx service name
-  let file_name = match &jinx_service.name {
-    None => log_exit!("[TARGZ] Failed to load jinx.json"),
-    Some(name) => name,
-  };
-
-  // create path
-  let tar_file_path = format!("{}/{}.tar.gz", jinx_directories.jinx_dir, file_name);
-
-  // open tar file
-  let mut tar_file = File::open(&tar_file_path).expect("[TARGZ] Failed to open tar file");
-  let mut tar_buffer = vec![];
-
-  // read tar file
-  tar_file
-    .read_to_end(&mut tar_buffer)
-    .expect("[TARGZ] Failed to read tar file");
-
-  tar_buffer
 }

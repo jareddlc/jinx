@@ -2,15 +2,17 @@
 name = "jinx"
 version = "0.1.0"
 authors = ["Jared De La Cruz <jared@jareddlc.com>"]
+description = "Deploy and manage docker containers"
+repository = "https://github.com/jareddlc/jinx"
+readme = "README.md"
+license = "MIT"
 edition = "2018"
 
 [dependencies]
-crossterm = "0.16"
-env_logger = "0.7"
-handlebars = "3.0"
-dirs = "2.0"
-log = "0.4"
-rs-docker = "0.0.58"
+bollard = "0.10"
+handlebars = "4.0"
+dirs = "3.0"
+rs-docker = "0.0.59"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
