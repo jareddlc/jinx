@@ -9,10 +9,10 @@ license = "MIT"
 edition = "2018"
 
 [dependencies]
-bollard = "0.10"
+bollard = "0.11"
 handlebars = "4.0"
 dirs = "3.0"
-rs-docker = "0.0.59"
+futures-util = "0.3"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"

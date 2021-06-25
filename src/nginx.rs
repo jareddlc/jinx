@@ -1,4 +1,5 @@
 use handlebars::Handlebars;
+use std::fs;
 use std::fs::File;
 use std::str;
 
@@ -52,4 +53,20 @@ pub fn write_nginx_conf(jinx_conf: &JinxConf) {
     handlebars
         .render_template_to_write(&nginx_template, &jinx_conf, output_file)
         .expect("[NGINX] Failed to write nginx_conf");
+}
+
+// writes the Dockerfile for jinx_loadbalancer
+pub fn write_nginx_dockerfile() {
+    // get jinx files
+    let jinx_files = get_jinx_files();
+
+    // load template from binary
+    let dockerfile_bytes = include_bytes!("./templates/Dockerfile");
+
+    // write file
+    fs::write(
+        &format!("{}/Dockerfile", jinx_files.jinx_home),
+        &dockerfile_bytes,
+    )
+    .expect("[CONF] Failed to write jinx Dockerfile");
 }

@@ -29,8 +29,8 @@ http {
   gzip_types text/plain text/html text/css application/javascript application/xhtml+xml application/xml image/webp image/apng image/svg+xml;
 
   # upstreams
-{{#each jinx_services}}  upstream {{name}}-upstream {
-    server {{image_name}}:{{image_port}};
+{{#each jinx_services}}  upstream {{name}}-jinx-upstream {
+    server {{name}}-jinx:{{image_port}};
   }{{/each}}
 
 {{#each jinx_services}}{{#if https_redirect}}  # redirect traffic to https
@@ -52,7 +52,7 @@ http {
     access_log /var/log/nginx/{{image_name}}.access.log main;
 
     location / {
-      proxy_pass http://{{name}}-upstream;
+      proxy_pass http://{{name}}-jinx-upstream;
       proxy_http_version 1.1;
       proxy_set_header Host $host;
       proxy_set_header X-Real-IP $remote_addr;
@@ -74,7 +74,7 @@ http {
     ssl_session_cache shared:SSL:10m;
 
     location / {
-      proxy_pass http://{{name}}-upstream;
+      proxy_pass http://{{name}}-jinx-upstream;
       proxy_http_version 1.1;
       proxy_set_header Host $host;
       proxy_set_header X-Real-IP $remote_addr;
@@ -82,7 +82,7 @@ http {
 
     # cache web assets
     location ~* \.(jpg|jpeg|png|gif|ico|svg|mp4|css|js)$ {
-      proxy_pass http://{{name}}-upstream;
+      proxy_pass http://{{name}}-jinx-upstream;
       proxy_http_version 1.1;
       proxy_set_header Host $host;
       proxy_set_header X-Real-IP $remote_addr;

@@ -10,7 +10,6 @@ pub struct JinxService {
   pub name: String,
   pub domain: String,
   pub image_name: String,
-  pub image_build: bool,
   pub image_port: u64,
   pub https_redirect: bool,
   pub https: bool,
@@ -19,10 +18,9 @@ pub struct JinxService {
 impl Default for JinxService {
   fn default() -> Self {
     Self {
-      name: "None or no jinx.json".to_string(),
-      domain: "None or no jinx.json".to_string(),
-      image_name: "None or no jinx.json".to_string(),
-      image_build: false,
+      name: "None".to_string(),
+      domain: "None".to_string(),
+      image_name: "None".to_string(),
       image_port: 8080,
       https_redirect: false,
       https: false,
@@ -52,4 +50,13 @@ pub fn get_jinx_service() -> JinxService {
   };
 
   service
+}
+
+pub fn get_jinx_loadbalancer_service() -> JinxService {
+  JinxService {
+    name: "jinx_loadbalancer".to_string(),
+    image_name: "jinx_loadbalancer".to_string(),
+    image_port: 80,
+    ..Default::default()
+  }
 }

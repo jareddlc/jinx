@@ -7,7 +7,6 @@ Example jinx.json
   "name": "hello-jinx",
   "domain": "jinx.com",
   "image_name": "hello_jinx",
-  "image_build": true,
   "image_port": 8080,
   "https_redirect": false,
   "https": false

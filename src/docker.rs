@@ -1,6 +1,11 @@
-use rs_docker::container::ContainerCreate;
-use rs_docker::network::NetworkCreate;
-use rs_docker::Docker;
+use bollard::image::BuildImageOptions;
+use bollard::network::CreateNetworkOptions;
+use bollard::service::{
+    EndpointPortConfig, EndpointSpec, NetworkAttachmentConfig, ServiceSpec, ServiceSpecMode,
+    ServiceSpecModeReplicated, TaskSpec, TaskSpecContainerSpec,
+};
+use bollard::Docker;
+use futures_util::stream::StreamExt;
 use std::env;
 use std::fs::File;
 use std::io::BufRead;
@@ -10,42 +15,52 @@ use super::log_exit;
 use crate::service::JinxService;
 
 // builds the provided tar.gz file with meta from the JinxService
-pub fn build_docker_image(mut client: Docker, jinx_service: &JinxService, bytes: Vec<u8>) {
-    // create image name with tag
-    let name = format!("{}:{}", &jinx_service.name, "jinx".to_string());
+pub async fn build_docker_image(client: Docker, jinx_service: &JinxService, bytes: Vec<u8>) {
+    // define image options
+    let config = BuildImageOptions {
+        dockerfile: "Dockerfile",
+        t: &jinx_service.image_name,
+        ..Default::default()
+    };
 
-    let _build_result = client
-        .build_image(bytes, name)
-        .expect("[DOCKER] Failed to build image");
+    let mut image_build_stream = client.build_image(config, None, Some(bytes.into()));
+
+    while let Some(msg) = image_build_stream.next().await {
+        let message = match msg {
+            Ok(msg) => msg,
+            Err(err) => log_exit!("[DOCKER] Failed to get build message", err),
+        };
+        let stream = match message.stream {
+            Some(stream) => stream,
+            None => "".to_string(),
+        };
+
+        print!("{}", stream);
+    }
 }
 
 // creates a docker network
-pub fn create_jinx_network(mut client: Docker) {
+pub async fn create_jinx_network(client: Docker) {
     // define jinx network
-    let network = NetworkCreate {
-        Name: "jinx_network".to_string(),
-        CheckDuplicate: Some(true),
-        Driver: Some("overlay".to_string()),
-        Internal: Some(false),
-        Attachable: Some(false),
-        Ingress: None,
-        EnableIPv6: Some(false),
-        Options: None,
-        Labels: None,
+    let config = CreateNetworkOptions {
+        name: "jinx_network",
+        check_duplicate: true,
+        driver: "overlay",
+        internal: false,
+        ..Default::default()
     };
 
-    // create docker network
-    let network_id = match client.create_network(network) {
+    let network_id = match client.create_network(config).await {
         Ok(id) => id,
         Err(err) => log_exit!("[DOCKER] Failed to create jinx_network", err),
     };
 
-    println!("Jinx network created: {}", network_id);
+    println!("Jinx network created: {:?}", network_id);
 }
 
 // returns a Docker client
 pub fn get_client() -> Docker {
-    let docker = match Docker::connect("unix:///var/run/docker.sock") {
+    let docker = match Docker::connect_with_socket_defaults() {
         Ok(docker) => docker,
         Err(err) => log_exit!("[DOCKER] Failed to connect to docker socket", err),
     };
@@ -82,17 +97,70 @@ pub fn get_dockerignore() -> Vec<String> {
     lines
 }
 
-pub fn run_image(mut client: Docker, jinx_service: &JinxService) {
-    // pub ExposedPorts: Option<HashMap<String, HashMap<i32, i32>>>,
-    // pub HostConfig: Option<HostConfigCreate>
+pub async fn create_service(client: Docker, jinx_service: &JinxService) {
+    // create service name with jinx tag
+    let name = format!("{}{}", &jinx_service.name, "-jinx".to_string());
 
-    let container = ContainerCreate {
-        ExposedPorts: None,
-        HostConfig: None,
-        Image: format!("{}:{}", &jinx_service.name, "jinx".to_string()),
-        Labels: None,
+    _create_service(client, jinx_service, name, None).await;
+}
+
+pub async fn create_jinx_loadbalancer_service(client: Docker, jinx_service: &JinxService) {
+    // create jinx loadbalancer service
+    let name = "jinx-loadbalancer".to_string();
+    let publish_port = Some(jinx_service.image_port as i64);
+
+    _create_service(client, jinx_service, name, publish_port).await;
+}
+
+async fn _create_service(
+    client: Docker,
+    jinx_service: &JinxService,
+    name: String,
+    published_port: Option<i64>,
+) {
+    // define network to attach service
+    let networks = vec![NetworkAttachmentConfig {
+        target: Some("jinx_network".to_string()),
+        ..Default::default()
+    }];
+
+    // define service ports
+    let endpoint_spec = EndpointSpec {
+        ports: Some(vec![EndpointPortConfig {
+            target_port: Some(jinx_service.image_port as i64),
+            published_port: published_port,
+            ..Default::default()
+        }]),
+        ..Default::default()
     };
-    client
-        .create_container(jinx_service.name.clone(), container)
-        .expect("[DOCKER] Failed to create container");
+
+    // define service
+    let service = ServiceSpec {
+        name: Some(name),
+        mode: Some(ServiceSpecMode {
+            replicated: Some(ServiceSpecModeReplicated { replicas: Some(1) }),
+            ..Default::default()
+        }),
+        task_template: Some(TaskSpec {
+            container_spec: Some(TaskSpecContainerSpec {
+                image: Some(jinx_service.image_name.to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }),
+        networks: Some(networks),
+        endpoint_spec: Some(endpoint_spec),
+        ..Default::default()
+    };
+
+    let service = match client.create_service(service, None).await {
+        Ok(svc) => svc,
+        Err(err) => log_exit!("[DOCKER] Failed to create jinx service", err),
+    };
+    let service_id = match service.id {
+        Some(id) => id,
+        None => "".to_string(),
+    };
+
+    println!("Jinx service created: {}", service_id);
 }
