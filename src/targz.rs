@@ -83,7 +83,7 @@ fn _write_tar(jinx_service: &JinxService, excluded: &Vec<String>, directory: Opt
   let paths = fs::read_dir(&dir).expect("Failed to read jinx directory");
 
   // iterate over files
-  for path in paths {
+  'path: for path in paths {
     let p = path.expect("Failed to get path");
     let file_path = p.path();
 
@@ -95,7 +95,7 @@ fn _write_tar(jinx_service: &JinxService, excluded: &Vec<String>, directory: Opt
     // check excluded list
     for ex in excluded.iter() {
       if file_name.contains(ex) {
-        continue;
+        continue 'path;
       }
     }
 
