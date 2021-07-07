@@ -55,7 +55,7 @@ pub fn write_nginx_conf(jinx_conf: &JinxConf) {
         .expect("[NGINX] Failed to write nginx_conf");
 }
 
-// writes the Dockerfile for jinx_loadbalancer
+// writes the Dockerfile for jinx_proxy
 pub fn write_nginx_dockerfile() {
     // get jinx files
     let jinx_files = get_jinx_files();

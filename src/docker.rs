@@ -1,3 +1,4 @@
+use bollard::container::{Config, CreateContainerOptions};
 use bollard::image::BuildImageOptions;
 use bollard::network::CreateNetworkOptions;
 use bollard::service::{
@@ -6,6 +7,7 @@ use bollard::service::{
 };
 use bollard::Docker;
 use futures_util::stream::StreamExt;
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::BufRead;
@@ -97,6 +99,7 @@ pub fn get_dockerignore() -> Vec<String> {
     lines
 }
 
+// creates a docker service
 pub async fn create_service(client: Docker, jinx_service: &JinxService) {
     // create service name with jinx tag
     let name = format!("{}{}", &jinx_service.name, "-jinx".to_string());
@@ -104,12 +107,65 @@ pub async fn create_service(client: Docker, jinx_service: &JinxService) {
     _create_service(client, jinx_service, name, None).await;
 }
 
-pub async fn create_jinx_loadbalancer_service(client: Docker, jinx_service: &JinxService) {
-    // create jinx loadbalancer service
-    let name = "jinx-loadbalancer".to_string();
+// creates a jinx proxy service
+pub async fn create_jinx_proxy_service(client: Docker, jinx_service: &JinxService) {
+    // create jinx proxy service
+    let name = "jinx-proxy".to_string();
     let publish_port = Some(jinx_service.image_port as i64);
 
     _create_service(client, jinx_service, name, publish_port).await;
+}
+
+// runs an image
+pub async fn run_image(
+    client: Docker,
+    image_name: &str,
+    ports: Vec<&str>,
+    vols: Vec<&str>,
+    envs: Option<Vec<&str>>,
+    cmds: Option<Vec<&str>>,
+) {
+    let name = image_name.replace("/", "_");
+    let options = Some(CreateContainerOptions {
+        name: format!("jinx-{}", name),
+    });
+
+    let mut exposed_ports: HashMap<&str, HashMap<(), ()>> = HashMap::new();
+    let mut volumes: HashMap<&str, HashMap<(), ()>> = HashMap::new();
+
+    for port in ports {
+        exposed_ports.insert(port, HashMap::new());
+    }
+
+    for vol in vols {
+        volumes.insert(vol, HashMap::new());
+    }
+
+    let config = Config {
+        image: Some(image_name),
+        exposed_ports: Some(exposed_ports),
+        volumes: Some(volumes),
+        cmd: cmds,
+        env: envs,
+        ..Default::default()
+    };
+
+    let container_id = match client.create_container(options, config).await {
+        Ok(id) => id,
+        Err(err) => log_exit!("[DOCKER] Failed to create image", err),
+    };
+
+    println!("Created container: {:?}", container_id.id);
+
+    match client
+        .start_container::<String>(&container_id.id, None)
+        .await
+    {
+        Ok(none) => none,
+        Err(err) => log_exit!("[DOCKER] Failed to start image", err),
+    };
+
+    println!("Started container: {:?}", container_id.id);
 }
 
 async fn _create_service(
@@ -144,6 +200,7 @@ async fn _create_service(
         task_template: Some(TaskSpec {
             container_spec: Some(TaskSpecContainerSpec {
                 image: Some(jinx_service.image_name.to_string()),
+                env: Some(jinx_service.image_env.clone()),
                 ..Default::default()
             }),
             ..Default::default()

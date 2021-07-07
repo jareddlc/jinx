@@ -7,12 +7,12 @@ use tar::Builder;
 
 use super::log_exit;
 use crate::file::get_jinx_files;
-use crate::service::get_jinx_loadbalancer_service;
+use crate::service::get_jinx_proxy_service;
 use crate::service::JinxService;
 
-pub fn create_jinx_loadbalancer_tar() {
+pub fn create_jinx_proxy_tar() {
   // get service
-  let jinx_service = get_jinx_loadbalancer_service();
+  let jinx_service = get_jinx_proxy_service();
 
   // get jinx files
   let jinx_files = get_jinx_files();
@@ -22,9 +22,9 @@ pub fn create_jinx_loadbalancer_tar() {
   _write_tar(&jinx_service, &excluded, Some(jinx_files.jinx_home));
 }
 
-pub fn get_jinx_loadbalancer_tar() -> Vec<u8> {
+pub fn get_jinx_proxy_tar() -> Vec<u8> {
   // get service
-  let jinx_service = get_jinx_loadbalancer_service();
+  let jinx_service = get_jinx_proxy_service();
 
   get_tar(&jinx_service)
 }

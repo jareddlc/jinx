@@ -2,7 +2,7 @@
 name = "jinx"
 version = "0.1.0"
 authors = ["Jared De La Cruz <jared@jareddlc.com>"]
-description = "Deploy and manage docker containers"
+description = "Proxy and deploy docker containers"
 repository = "https://github.com/jareddlc/jinx"
 readme = "README.md"
 license = "MIT"

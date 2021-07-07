@@ -11,6 +11,7 @@ pub struct JinxService {
   pub domain: String,
   pub image_name: String,
   pub image_port: u64,
+  pub image_env: Vec<String>,
   pub https_redirect: bool,
   pub https: bool,
 }
@@ -22,6 +23,7 @@ impl Default for JinxService {
       domain: "None".to_string(),
       image_name: "None".to_string(),
       image_port: 8080,
+      image_env: vec![],
       https_redirect: false,
       https: false,
     }
@@ -52,10 +54,10 @@ pub fn get_jinx_service() -> JinxService {
   service
 }
 
-pub fn get_jinx_loadbalancer_service() -> JinxService {
+pub fn get_jinx_proxy_service() -> JinxService {
   JinxService {
-    name: "jinx_loadbalancer".to_string(),
-    image_name: "jinx_loadbalancer".to_string(),
+    name: "jinx_proxy".to_string(),
+    image_name: "jinx_proxy".to_string(),
     image_port: 80,
     ..Default::default()
   }
