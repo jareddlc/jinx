@@ -1,6 +1,6 @@
 [package]
-name = "jinx"
-version = "0.1.0"
+name = "jinx-proxy"
+version = "0.1.1"
 authors = ["Jared De La Cruz <jared@jareddlc.com>"]
 description = "Proxy and deploy docker containers"
 repository = "https://github.com/jareddlc/jinx"

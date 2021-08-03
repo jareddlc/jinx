@@ -3,7 +3,8 @@ use bollard::image::BuildImageOptions;
 use bollard::network::CreateNetworkOptions;
 use bollard::service::{
     EndpointPortConfig, EndpointSpec, NetworkAttachmentConfig, ServiceSpec, ServiceSpecMode,
-    ServiceSpecModeReplicated, TaskSpec, TaskSpecContainerSpec,
+    ServiceSpecModeReplicated, TaskSpec, TaskSpecContainerSpec, TaskSpecContainerSpecFile,
+    TaskSpecContainerSpecSecrets,
 };
 use bollard::Docker;
 use futures_util::stream::StreamExt;
@@ -190,6 +191,32 @@ async fn _create_service(
         ..Default::default()
     };
 
+    // define envs
+    let mut envs = vec![];
+    if jinx_service.image_env.is_some() {
+        envs = jinx_service.image_env.clone().unwrap();
+    }
+
+    // define secrets
+    let mut secrets = vec![];
+    if jinx_service.image_secrets.is_some() {
+        let image_secrets = jinx_service.image_secrets.clone().unwrap();
+        for secret in image_secrets.iter() {
+            let split: Vec<&str> = secret.split(':').collect();
+            let s = TaskSpecContainerSpecSecrets {
+                secret_name: Some(split[0].to_string()),
+                secret_id: Some(split[1].to_string()),
+                file: Some(TaskSpecContainerSpecFile {
+                    name: Some(split[0].to_string()),
+                    uid: Some("0".to_string()),
+                    gid: Some("0".to_string()),
+                    mode: Some(292),
+                }),
+            };
+            secrets.push(s);
+        }
+    }
+
     // define service
     let service = ServiceSpec {
         name: Some(name),
@@ -200,7 +227,8 @@ async fn _create_service(
         task_template: Some(TaskSpec {
             container_spec: Some(TaskSpecContainerSpec {
                 image: Some(jinx_service.image_name.to_string()),
-                env: Some(jinx_service.image_env.clone()),
+                env: Some(envs.clone()),
+                secrets: Some(secrets),
                 ..Default::default()
             }),
             ..Default::default()

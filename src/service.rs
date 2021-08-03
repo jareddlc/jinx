@@ -11,7 +11,8 @@ pub struct JinxService {
   pub domain: String,
   pub image_name: String,
   pub image_port: u64,
-  pub image_env: Vec<String>,
+  pub image_env: Option<Vec<String>>,
+  pub image_secrets: Option<Vec<String>>,
   pub https_redirect: bool,
   pub https: bool,
 }
@@ -23,7 +24,8 @@ impl Default for JinxService {
       domain: "None".to_string(),
       image_name: "None".to_string(),
       image_port: 8080,
-      image_env: vec![],
+      image_env: None,
+      image_secrets: None,
       https_redirect: false,
       https: false,
     }
