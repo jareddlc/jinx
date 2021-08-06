@@ -1,3 +1,4 @@
+pub mod cert;
 pub mod conf;
 pub mod docker;
 pub mod file;

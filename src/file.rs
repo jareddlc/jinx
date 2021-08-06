@@ -9,6 +9,8 @@ pub struct JinxFiles {
   pub jinx_home: String,
   pub jinx_conf: String,
   pub nginx_conf: String,
+  pub letsencrypt_conf: String,
+  pub letsencrypt_www: String,
 }
 
 // returns JinxFiles
@@ -23,10 +25,14 @@ pub fn get_jinx_files() -> JinxFiles {
   let jinx_home = format!("{}/.jinx", home_dir.display());
   let jinx_conf = format!("{}/jinx_conf.json", jinx_home);
   let nginx_conf = format!("{}/nginx.conf", jinx_home);
+  let letsencrypt_conf = format!("{}/letsencrypt/conf", jinx_home);
+  let letsencrypt_www = format!("{}/letsencrypt/www", jinx_home);
 
   JinxFiles {
     jinx_home,
     jinx_conf,
     nginx_conf,
+    letsencrypt_conf,
+    letsencrypt_www,
   }
 }

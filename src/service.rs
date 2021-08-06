@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::BufReader;
 
 use super::log_exit;
+use crate::file::get_jinx_files;
 
 #[derive(Debug, Deserialize, Serialize, Clone, std::cmp::PartialEq)]
 pub struct JinxService {
@@ -13,6 +14,8 @@ pub struct JinxService {
   pub image_port: u64,
   pub image_env: Option<Vec<String>>,
   pub image_secrets: Option<Vec<String>>,
+  pub image_volumes: Option<Vec<String>>,
+  pub published_port: Option<i64>,
   pub https_redirect: bool,
   pub https: bool,
 }
@@ -26,6 +29,8 @@ impl Default for JinxService {
       image_port: 8080,
       image_env: None,
       image_secrets: None,
+      image_volumes: None,
+      published_port: None,
       https_redirect: false,
       https: false,
     }
@@ -57,10 +62,18 @@ pub fn get_jinx_service() -> JinxService {
 }
 
 pub fn get_jinx_proxy_service() -> JinxService {
+  let jinx_files = get_jinx_files();
+
+  let conf = format!("{}:/etc/letsencrypt", jinx_files.letsencrypt_conf);
+  let www = format!("{}:/var/www/certbot", jinx_files.letsencrypt_www);
+  let volumes = vec![conf, www];
+
   JinxService {
     name: "jinx_proxy".to_string(),
     image_name: "jinx_proxy".to_string(),
     image_port: 80,
+    image_volumes: Some(volumes),
+    published_port: Some(80),
     ..Default::default()
   }
 }

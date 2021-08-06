@@ -2,9 +2,9 @@ use bollard::container::{Config, CreateContainerOptions};
 use bollard::image::BuildImageOptions;
 use bollard::network::CreateNetworkOptions;
 use bollard::service::{
-    EndpointPortConfig, EndpointSpec, NetworkAttachmentConfig, ServiceSpec, ServiceSpecMode,
-    ServiceSpecModeReplicated, TaskSpec, TaskSpecContainerSpec, TaskSpecContainerSpecFile,
-    TaskSpecContainerSpecSecrets,
+    EndpointPortConfig, EndpointSpec, Mount, MountTypeEnum, NetworkAttachmentConfig, ServiceSpec,
+    ServiceSpecMode, ServiceSpecModeReplicated, TaskSpec, TaskSpecContainerSpec,
+    TaskSpecContainerSpecFile, TaskSpecContainerSpecSecrets,
 };
 use bollard::Docker;
 use futures_util::stream::StreamExt;
@@ -105,16 +105,15 @@ pub async fn create_service(client: Docker, jinx_service: &JinxService) {
     // create service name with jinx tag
     let name = format!("{}{}", &jinx_service.name, "-jinx".to_string());
 
-    _create_service(client, jinx_service, name, None).await;
+    _create_service(client, jinx_service, name).await;
 }
 
 // creates a jinx proxy service
 pub async fn create_jinx_proxy_service(client: Docker, jinx_service: &JinxService) {
     // create jinx proxy service
     let name = "jinx-proxy".to_string();
-    let publish_port = Some(jinx_service.image_port as i64);
 
-    _create_service(client, jinx_service, name, publish_port).await;
+    _create_service(client, jinx_service, name).await;
 }
 
 // runs an image
@@ -169,12 +168,7 @@ pub async fn run_image(
     println!("Started container: {:?}", container_id.id);
 }
 
-async fn _create_service(
-    client: Docker,
-    jinx_service: &JinxService,
-    name: String,
-    published_port: Option<i64>,
-) {
+async fn _create_service(client: Docker, jinx_service: &JinxService, name: String) {
     // define network to attach service
     let networks = vec![NetworkAttachmentConfig {
         target: Some("jinx_network".to_string()),
@@ -185,11 +179,28 @@ async fn _create_service(
     let endpoint_spec = EndpointSpec {
         ports: Some(vec![EndpointPortConfig {
             target_port: Some(jinx_service.image_port as i64),
-            published_port: published_port,
+            published_port: jinx_service.published_port,
             ..Default::default()
         }]),
         ..Default::default()
     };
+
+    // define mounts
+    let mut mounts = vec![];
+    if jinx_service.image_volumes.is_some() {
+        let image_volumes = jinx_service.image_secrets.clone().unwrap();
+
+        for mount in image_volumes.iter() {
+            let split: Vec<&str> = mount.split(':').collect();
+            let m = Mount {
+                source: Some(split[0].to_string()),
+                target: Some(split[1].to_string()),
+                typ: Some(MountTypeEnum::BIND),
+                ..Default::default()
+            };
+            mounts.push(m);
+        }
+    }
 
     // define envs
     let mut envs = vec![];
@@ -227,6 +238,7 @@ async fn _create_service(
         task_template: Some(TaskSpec {
             container_spec: Some(TaskSpecContainerSpec {
                 image: Some(jinx_service.image_name.to_string()),
+                mounts: Some(mounts),
                 env: Some(envs.clone()),
                 secrets: Some(secrets),
                 ..Default::default()
