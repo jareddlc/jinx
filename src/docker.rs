@@ -1,5 +1,6 @@
 use bollard::container::{Config, CreateContainerOptions};
 use bollard::image::BuildImageOptions;
+use bollard::models::{HostConfig, PortBinding};
 use bollard::network::CreateNetworkOptions;
 use bollard::service::{
     EndpointPortConfig, EndpointSpec, Mount, MountTypeEnum, NetworkAttachmentConfig, ServiceSpec,
@@ -130,12 +131,25 @@ pub async fn run_image(
         name: format!("jinx-{}", name),
     });
 
-    let mut exposed_ports: HashMap<&str, HashMap<(), ()>> = HashMap::new();
     let mut volumes: HashMap<&str, HashMap<(), ()>> = HashMap::new();
 
+    let mut port_bindings = HashMap::new();
     for port in ports {
-        exposed_ports.insert(port, HashMap::new());
+        let split: Vec<&str> = port.split(':').collect();
+        let p = vec![
+            PortBinding {
+                host_ip: None,
+                host_port: Some(split[0].to_string()),
+            }
+        ];
+
+        port_bindings.insert(split[1].to_string(), Some(p));
     }
+
+    let host_config = HostConfig {
+        port_bindings: Some(port_bindings),
+        ..Default::default()
+    };
 
     for vol in vols {
         volumes.insert(vol, HashMap::new());
@@ -143,10 +157,10 @@ pub async fn run_image(
 
     let config = Config {
         image: Some(image_name),
-        exposed_ports: Some(exposed_ports),
         volumes: Some(volumes),
         cmd: cmds,
         env: envs,
+        host_config: Some(host_config),
         ..Default::default()
     };
 
