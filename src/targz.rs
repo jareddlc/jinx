@@ -17,7 +17,7 @@ pub fn create_jinx_proxy_tar() {
   // get jinx files
   let jinx_files = get_jinx_files();
 
-  let excluded = vec!["jinx_conf.json".to_string(), ".jinx.tar.gz".to_string()];
+  let excluded = vec!["jinx_conf.json".to_string(), ".jinx.tar.gz".to_string(),  "letsencrypt".to_string()];
 
   _write_tar(&jinx_service, &excluded, Some(jinx_files.jinx_home));
 }

@@ -202,7 +202,7 @@ async fn _create_service(client: Docker, jinx_service: &JinxService, name: Strin
     // define mounts
     let mut mounts = vec![];
     if jinx_service.image_volumes.is_some() {
-        let image_volumes = jinx_service.image_secrets.clone().unwrap();
+        let image_volumes = jinx_service.image_volumes.clone().unwrap();
 
         for mount in image_volumes.iter() {
             let split: Vec<&str> = mount.split(':').collect();
