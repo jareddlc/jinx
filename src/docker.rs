@@ -136,12 +136,10 @@ pub async fn run_image(
     let mut port_bindings = HashMap::new();
     for port in ports {
         let split: Vec<&str> = port.split(':').collect();
-        let p = vec![
-            PortBinding {
-                host_ip: None,
-                host_port: Some(split[0].to_string()),
-            }
-        ];
+        let p = vec![PortBinding {
+            host_ip: None,
+            host_port: Some(split[0].to_string()),
+        }];
 
         port_bindings.insert(split[1].to_string(), Some(p));
     }
@@ -190,12 +188,28 @@ async fn _create_service(client: Docker, jinx_service: &JinxService, name: Strin
     }];
 
     // define service ports
-    let endpoint_spec = EndpointSpec {
-        ports: Some(vec![EndpointPortConfig {
-            target_port: Some(jinx_service.image_port as i64),
+    let mut ports = vec![];
+    if name.contains("jinx-proxy") {
+        ports.push(EndpointPortConfig {
+            target_port: Some(80),
+            published_port: Some(80),
+            ..Default::default()
+        });
+        ports.push(EndpointPortConfig {
+            target_port: Some(443),
+            published_port: Some(443),
+            ..Default::default()
+        });
+    } else {
+        ports.push(EndpointPortConfig {
+            target_port: Some(jinx_service.image_port),
             published_port: jinx_service.published_port,
             ..Default::default()
-        }]),
+        });
+    }
+
+    let endpoint_spec = EndpointSpec {
+        ports: Some(ports),
         ..Default::default()
     };
 
@@ -218,8 +232,8 @@ async fn _create_service(client: Docker, jinx_service: &JinxService, name: Strin
 
     // define envs
     let mut envs = vec![];
-    if jinx_service.image_env.is_some() {
-        envs = jinx_service.image_env.clone().unwrap();
+    if jinx_service.image_envs.is_some() {
+        envs = jinx_service.image_envs.clone().unwrap();
     }
 
     // define secrets
